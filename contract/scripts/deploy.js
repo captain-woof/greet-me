@@ -11,7 +11,8 @@ const deploy = async () => {
 
         // Log to console
         const deployerBalance = await deployer.getBalance();
-        console.log(`Deployer deployed GreetMe to ${contract.address}`);
+        console.log(`Deployer: ${deployer.address}`);
+        console.log(`Deployed GreetMe to: ${contract.address}`);
         console.log(`Deployer's balance left: ${ethers.utils.formatEther(deployerBalance)} ETH`);
     } catch (e) {
         console.log("Encountered exception", e);
