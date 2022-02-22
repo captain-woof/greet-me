@@ -50,7 +50,7 @@ export default function GreeterForm() {
 
             {!signerAddress &&
                 <p id="main-container__not-connected-warning">
-                    You must be connected to send me a message! 🙋
+                    You must be connected to <b>Rinkeby</b> to send me a message! 🙋
                 </p>
             }
         </main>
