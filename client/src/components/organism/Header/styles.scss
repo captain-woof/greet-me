@@ -1,0 +1,33 @@
+#main-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4rem;
+    display: flex;
+    align-items: center;
+    background-color: var(--color-white);
+    padding: 0 1rem;
+
+    #main-header__sitename {
+        font-weight: 500;
+
+        @supports (background-clip: text){
+            background: var(--gradient);
+            color: transparent;
+            background-clip: text;
+            font-weight: 600;
+        }
+
+        @supports (-webkit-background-clip: text){
+            background: var(--gradient);
+            color: transparent;
+            -webkit-background-clip: text;
+            font-weight: 600;
+        }
+    }
+
+    #main-header__connect-btn {
+        margin-left: auto;
+    }
+}
