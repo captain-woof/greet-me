@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { ethers } from "ethers";
 import swal from "sweetalert";
+import CONTRACT from "../contract/GreetMe.json";
 
 // Hook to connect wallet
 export const useConnect = (connectOnLoad = false) => {
@@ -8,6 +9,7 @@ export const useConnect = (connectOnLoad = false) => {
     const [signerAddress, setSignerAddress] = useState(null); // State to hold current signer's address
     const [provider, setProvider] = useState(null); // Provider
     const [loading, setLoading] = useState(false);
+    const [greetMeContract, setGreetMeContract] = useState(null); // State to store Smart Contract
 
     // Function to connect wallet
     const handleConnect = useCallback(async (askPermission = true) => {
@@ -33,6 +35,10 @@ export const useConnect = (connectOnLoad = false) => {
                 const currentSignerAddress = await currentSigner.getAddress();
                 setSigner(currentSigner);
                 setSignerAddress(currentSignerAddress);
+
+                // Set connection to contract
+                const contract = new ethers.Contract(import.meta.env.VITE_GREET_ME_CONTRACT_ADDRESS, CONTRACT.abi, currentSigner);
+                setGreetMeContract(contract);
 
                 // Show swal
                 askPermission && swal({
@@ -65,10 +71,13 @@ export const useConnect = (connectOnLoad = false) => {
                 if (!!newAccounts && newAccounts?.length > 0 && !!provider) {
                     const currentSigner = provider.getSigner();
                     const currentSignerAddress = await currentSigner.getAddress();
+                    const contract = new ethers.Contract(import.meta.env.VITE_GREET_ME_CONTRACT_ADDRESS, CONTRACT.abi, currentSigner);
+                    setGreetMeContract(contract);
                     setSigner(currentSigner);
                     setSignerAddress(currentSignerAddress);
                 } else {
                     setSigner(null);
+                    setGreetMeContract(null);
                     setSignerAddress(null);
                 }
             });
@@ -81,6 +90,7 @@ export const useConnect = (connectOnLoad = false) => {
         signer,
         setSigner,
         handleConnect,
-        signerAddress
+        signerAddress,
+        greetMeContract
     }
 }

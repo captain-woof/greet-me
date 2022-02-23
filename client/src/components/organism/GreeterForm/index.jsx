@@ -1,25 +1,38 @@
 import { useCallback, useState } from "react";
+import swal from '@sweetalert/with-react';
 import { useConnect } from "../../../hooks/useConnect";
 import Button from "../../atoms/Button";
 import "./styles.scss";
 
 export default function GreeterForm() {
-    const { signer, signerAddress } = useConnect(true);
+    const { signer, signerAddress, greetMeContract } = useConnect(true);
     const [greeting, setGreeting] = useState("");
     const [sending, setSending] = useState(false);
 
     // Function to handle form submission
-    const handleFormSubmit = useCallback((e) => {
+    const handleFormSubmit = useCallback(async (e) => {
         e.preventDefault();
-
         if (!!signer) {
-            setSending(true);
-
-
-
-            setSending(false);
+            try {
+                setSending(true);
+                await greetMeContract.greet(greeting);
+                setGreeting("");
+                swal({
+                    icon: "success",
+                    title: "Greeting sent!",
+                    content: (
+                        <>
+                            <p>Thanks! I'll be sure to read it!<br />Let's connect! Follow me on twitter <a href="https://twitter.com/realCaptainWoof">@realCaptainWoof</a>.</p>
+                        </>
+                    )
+                });
+            } catch (e) {
+                swal({ icon: "error", title: "Error", text: e.message });
+            } finally {
+                setSending(false);
+            }
         }
-    }, [setGreeting, signer, setSending])
+    }, [signer, setSending, greetMeContract, greeting, setGreeting])
 
     return (
         <main id="main-container">
