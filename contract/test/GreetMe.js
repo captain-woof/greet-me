@@ -34,16 +34,19 @@ describe("GreetMe should store and return all greetings correctly", () => {
         const numOfMessagesStored = await contract.getNumOfGreetings();
         assert.equal(numOfMessagesStored, greetingsToSend.length, "Incorrect number of messages stored");
 
-        const [greetingsStored, greetersStored] = await contract.getGreetings(2);
+        const [idsStored, greetingsStored, greetersStored] = await contract.getGreetings(2);
+        const ids = new Set();
         greetersStored.forEach((greeterStoredAddress, indexStored) => {
             let greeterIndex = -1;
             greeters.forEach((greeter, index) => {
-                if(greeter.address === greeterStoredAddress){
+                if (greeter.address === greeterStoredAddress) {
                     greeterIndex = index;
                 }
             });
             assert.isAbove(greeterIndex, -1, "Greeter's address was not stored correctly!");
             assert.equal(greetingsStored[indexStored], greetingsToSend[greeterIndex], "Invalid message was stored!");
+            assert.isFalse(ids.has(idsStored[indexStored]), "Messages are not stored under unique ID!");
+            ids.add(idsStored[indexStored]);
         });
     });
 })
