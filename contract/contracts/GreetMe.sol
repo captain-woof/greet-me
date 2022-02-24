@@ -32,7 +32,7 @@ contract GreetMe {
     // Function to return greetings. 'numOfMessages' must be 0 to get all messages. For anything other than 0, say 'n', last n messages are returned
     function getGreetings(uint256 _numOfMessagesNeeded) public view returns (string[] memory, address[] memory, uint256[] memory) {
         uint256 _numOfMessagesStored = getNumOfGreetings();
-        if((_numOfMessagesNeeded == 0) || (_numOfMessagesNeeded > _numOfMessagesStored)){
+        if((_numOfMessagesNeeded == 0) || (_numOfMessagesNeeded >= _numOfMessagesStored)){
             return (greetings, greeters, timestamps);
         } else {
             string[] memory _greetingsToReturn = new string[](_numOfMessagesNeeded);
