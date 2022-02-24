@@ -1,89 +1,14 @@
-import { useCallback, useEffect, useState } from "react";
-import swal from '@sweetalert/with-react';
+import { useState } from "react";
 import { useConnect } from "../../../hooks/useConnect";
+import { useGreeting } from "../../../hooks/useGreeting";
 import Button from "../../atoms/Button";
 import "./styles.scss";
-import moment from "moment";
+import swal from '@sweetalert/with-react';
 
 export default function GreeterForm() {
-    const { signer, signerAddress, greetMeContract } = useConnect(true);
+    const { signerAddress } = useConnect(true);
     const [greeting, setGreeting] = useState("");
-    const [sending, setSending] = useState(false);
-    const [greetingsDisplayed, setGreetingsDisplayed] = useState([]); // [{message, timestamp, address}]
-    const [initialGreetingsLoaded, setInitialGreetingsLoaded] = useState(false); // State to track if initial message loading is done
-
-    // Function to handle form submission
-    const handleFormSubmit = useCallback(async (e) => {
-        e.preventDefault();
-        if (!!signer) {
-            try {
-                setSending(true);
-                await greetMeContract.greet(greeting);
-                setGreeting("");
-                swal({
-                    icon: "success",
-                    title: "Greeting sent!",
-                    content: (
-                        <>
-                            <p>Thanks! I'll be sure to read it!<br />Let's connect! Follow me on twitter <a href="https://twitter.com/realCaptainWoof">@realCaptainWoof</a>.</p>
-                        </>
-                    )
-                });
-            } catch (e) {
-                swal({ icon: "error", title: "Error", text: e.message });
-            } finally {
-                setSending(false);
-            }
-        }
-    }, [signer, setSending, greetMeContract, greeting, setGreeting])
-
-    // Get last 6 messages to display them
-    useEffect(async () => {
-        if (!!greetMeContract) {
-            const [messages, addresses, timestamps] = await greetMeContract.getGreetings(6);
-
-            const greetingsStored = messages.map((message, i) => ({
-                message: message,
-                timestamp: moment.unix(timestamps[i].toNumber()).format("Do MMM, YYYY / hh:mm a"),
-                address: addresses[i]
-            }));
-            setGreetingsDisplayed(greetingsStored);
-            setInitialGreetingsLoaded(true);
-        }
-    }, [greetMeContract])
-
-    // Add new messages when the Greeting event is fired by contract
-    useEffect(() => {
-        if (!!greetMeContract && initialGreetingsLoaded) {
-            // Function to add new greeting, and remove the oldest one
-            function addNewGreetingToBeDisplayed(newGreeting) {
-                setGreetingsDisplayed((prevGreetings) => {
-                    const newGreetings = [...prevGreetings.slice(1), newGreeting];
-                    return newGreetings;
-                });
-            }
-
-            greetMeContract.on("Greet", (greeter, greeting, timestamp) => {
-                // Construct new message
-                const convertedTimestamp = moment.unix(timestamp.toNumber()).format("Do MMM, YYYY / hh:mm a");
-                const newGreeting = {
-                    message: greeting,
-                    timestamp: convertedTimestamp,
-                    address: greeter
-                };
-
-                // Store new greeting to display it
-                if (greetingsDisplayed.length === 0) { // Implies that this is the first greeting
-                    addNewGreetingToBeDisplayed(newGreeting);
-                } else { // Implies that this is NOT the first greeting
-                    const lastMsgStored = greetingsDisplayed[greetingsDisplayed.length - 1];
-                    if (!(lastMsgStored.message === greeting && lastMsgStored.timestamp === convertedTimestamp && lastMsgStored.address === greeter)) { // Check if event was fired by existing message. If yes, don't proceed
-                        addNewGreetingToBeDisplayed(newGreeting);
-                    }
-                }
-            });
-        }
-    }, [greetMeContract, initialGreetingsLoaded])
+    const { greetingsDisplayed, sendGreeting, sending } = useGreeting();
 
     return (
         <main id="main-container">
@@ -91,7 +16,22 @@ export default function GreeterForm() {
             <h1 id="main-container__title">Greet Me 👋</h1>
 
             {/* Form to send greeting */}
-            <form id="main-container__greeter-form" onSubmit={handleFormSubmit}>
+            <form id="main-container__greeter-form" onSubmit={async (e) => {
+                e.preventDefault();
+                try {
+                    await sendGreeting(greeting);
+                    setGreeting("");
+                    swal({
+                        icon: "success",
+                        title: "Greeting sent!",
+                        content: (
+                            <>
+                                <p>Thanks! I'll be sure to read it!<br />Let's connect! Follow me on twitter <a href="https://twitter.com/realCaptainWoof">@realCaptainWoof</a>.</p>
+                            </>
+                        )
+                    });
+                } catch (e) { /* NO HANDLING NEEDED HERE */}
+            }}>
                 <h2 id="main-container__greeter-form__title">
                     Hey visitor!
                 </h2>
