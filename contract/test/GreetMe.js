@@ -20,33 +20,31 @@ describe("GreetMe should store and return all greetings correctly", () => {
         const greetingsToSend = [
             "Hi there buddy",
             "gm",
-            "Hi, what's up?"
-        ]
-        const greeters = (await hre.ethers.getSigners()).slice(1, 1 + greetingsToSend.length);
-        const contractConnWithGreeters = await Promise.all(greeters.map((greeter) => (
-            contract.connect(greeter)
-        )));
-        await Promise.all(contractConnWithGreeters.map((contractConnWithGreeter, index) => (
-            contractConnWithGreeter.greet(greetingsToSend[index])
+            "Hi, what's up?",
+            "Random message here",
+            "Hey buddy",
+            "gn",
+            "hi, let's talk",
+            "how are you doing?",
+            "How have you been?",
+            "What will you do with these many greetings?"
+        ] // Test greetings, 10 in number
+        const [, signer] = await hre.ethers.getSigners();
+        const connectedContract = await contract.connect(signer);
+        await Promise.all(greetingsToSend.map((greeting) => (
+            connectedContract.greet(greeting)
         )));
 
-        // Test correctness of stored data
-        const numOfMessagesStored = await contract.getNumOfGreetings();
-        assert.equal(numOfMessagesStored, greetingsToSend.length, "Incorrect number of messages stored");
+        // Get greetings from contract
+        const [, greetings, ,] = await connectedContract.getGreetings(1, 10);
 
-        const [idsStored, greetingsStored, greetersStored] = await contract.getGreetings(2);
-        const ids = new Set();
-        greetersStored.forEach((greeterStoredAddress, indexStored) => {
-            let greeterIndex = -1;
-            greeters.forEach((greeter, index) => {
-                if (greeter.address === greeterStoredAddress) {
-                    greeterIndex = index;
-                }
-            });
-            assert.isAbove(greeterIndex, -1, "Greeter's address was not stored correctly!");
-            assert.equal(greetingsStored[indexStored], greetingsToSend[greeterIndex], "Invalid message was stored!");
-            assert.isFalse(ids.has(idsStored[indexStored]), "Messages are not stored under unique ID!");
-            ids.add(idsStored[indexStored]);
-        });
+        //// Assertions
+        // Verify that all greetings were stored
+        assert.equal(10, greetings.length, "All messages were not stored!");
+
+        // Verify that pagination works correctly
+        const chosenGreeting = greetings[6]; // Choosing an arbitrary greeting
+        const [, greetingsPaginated, ,] = await connectedContract.getGreetings(2, 2);
+        assert.equal(chosenGreeting, greetingsPaginated[0], "Pagination does not work correctly!");
     });
 })

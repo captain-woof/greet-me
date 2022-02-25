@@ -29,29 +29,37 @@ contract GreetMe {
         return greetings.length;
     }
 
-    // Function to return greetings. 'numOfMessages' must be 0 to get all messages. For anything other than 0, say 'n', last n messages are returned
-    function getGreetings(uint256 _numOfMessagesNeeded) public view returns (uint256[] memory, string[] memory, address[] memory, uint256[] memory) {
-        uint256 _numOfMessagesStored = getNumOfGreetings();
-        if((_numOfMessagesNeeded == 0) || (_numOfMessagesNeeded >= _numOfMessagesStored)){
-            uint256[] memory _ids = new uint256[](_numOfMessagesStored);
-            for(uint256 i = 0; i < _numOfMessagesStored; i++){
-                _ids[i] = i;
-            }
-            return (_ids, greetings, greeters, timestamps);
+    // Function to generate a sequence of integers; 'end' is off-by-one.
+    function range(uint256 start, uint256 end) pure internal returns (uint256[] memory){
+        uint256[] memory arr = new uint256[](end - start);
+        for (uint256 i = start; i < end; i++){
+            arr[i - start] = i;
+        }
+        return arr;
+    }
+
+    // Function to return greetings. Greetings are returned in ascending order of their timestamps, starting from last element. Returns arrays of ids, greetings, addresses and timestamps.
+    function getGreetings(uint256 pageNum, uint256 pageSize) public view returns (uint256[] memory, string[] memory, address[] memory, uint256[] memory) {
+        uint256 startIndex = greetings.length - (pageNum * pageSize);
+        startIndex = startIndex < 0 ? 0 : startIndex;
+        uint256 endIndex = startIndex + pageSize; // Off-by-one (endIndex won't be included)
+
+        // If startIndex and endIndex are such that entire array needs to be returned, then return the arrays from storage. Else, create new arrays, fill it up with correct slice (startIndex, endIndex), then return it.
+        if(startIndex == 0 && endIndex == greetings.length){
+            return (range(startIndex, endIndex), greetings, greeters, timestamps);
         } else {
-            uint256[] memory _ids = new uint256[](_numOfMessagesStored);
-            string[] memory _greetingsToReturn = new string[](_numOfMessagesNeeded);
-            address[] memory _greetersToReturn = new address[](_numOfMessagesNeeded);
-            uint256[] memory _timestampsToReturn = new uint256[](_numOfMessagesNeeded);
-            uint256 currentIndex = 0;
-            for (uint256 i = _numOfMessagesStored - _numOfMessagesNeeded; i < _numOfMessagesStored; i++){
-                _ids[currentIndex] = i;
-                _greetingsToReturn[currentIndex] = greetings[i];
-                _greetersToReturn[currentIndex] = greeters[i];
-                _timestampsToReturn[currentIndex] = timestamps[i];
-                currentIndex += 1;
+            uint256 numOfElementsToReturn = endIndex - startIndex;
+            string[] memory greetingsToReturn = new string[](numOfElementsToReturn);
+            address[] memory greetersToReturn = new address[](numOfElementsToReturn);
+            uint256[] memory timestampsToReturn = new uint256[](numOfElementsToReturn);
+
+            for(uint256 i = startIndex; i < endIndex; i++){
+                greetingsToReturn[i - startIndex] = greetings[i];
+                greetersToReturn[i - startIndex] = greeters[i];
+                timestampsToReturn[i - startIndex] = timestamps[i];
             }
-            return (_ids, _greetingsToReturn, _greetersToReturn, _timestampsToReturn);
+
+            return (range(startIndex, endIndex), greetingsToReturn, greetersToReturn, timestampsToReturn);
         }
     }
 }
