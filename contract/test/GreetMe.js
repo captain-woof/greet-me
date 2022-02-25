@@ -42,11 +42,14 @@ describe("GreetMe should store and return all greetings correctly", () => {
         // Verify that all greetings were stored
         assert.equal(10, greetings.length, "All messages were not stored!");
 
-        // Verify that pagination works correctly
-        const chosenGreeting = greetings[6]; // Choosing an arbitrary greeting
-        const chosenId = ids[6]; // Choosing the above greeting's id
+        // Verify that pagination works correctly (in-range)
         const [idsPaginated, greetingsPaginated, ,] = await connectedContract.getGreetings(2, 2);
-        assert.equal(chosenGreeting, greetingsPaginated[0], "Pagination does not work correctly for greetings (str)!");
-        assert.equal(chosenId.toNumber(), idsPaginated[0].toNumber(), "Pagination does not work correctly for ids (uint256s)!");
+        assert.equal(greetings[6], greetingsPaginated[0], "Pagination does not work correctly for greetings (in-range)!");
+        assert.equal(ids[6].toNumber(), idsPaginated[0].toNumber(), "Pagination does not work correctly for ids (in-range)!");
+
+        // Verify that pagination works correctly (out-of-range)
+        const [idsPaginated2, greetingsPaginated2, ,] = await connectedContract.getGreetings(3, 4);
+        assert.equal(greetings[0], greetingsPaginated2[0], "Pagination does not work correctly for greetings (out-of-range)!");
+        assert.equal(ids[0].toNumber(), idsPaginated2[0].toNumber(), "Pagination does not work correctly for ids (out-of-range)!");
     });
 })

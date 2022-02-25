@@ -40,9 +40,22 @@ contract GreetMe {
 
     // Function to return greetings. Greetings are returned in ascending order of their timestamps, starting from last element. Returns arrays of ids, greetings, addresses and timestamps.
     function getGreetings(uint256 pageNum, uint256 pageSize) public view returns (uint256[] memory, string[] memory, address[] memory, uint256[] memory) {
-        uint256 startIndex = greetings.length - (pageNum * pageSize);
-        startIndex = startIndex < 0 ? 0 : startIndex;
-        uint256 endIndex = startIndex + pageSize; // Off-by-one (endIndex won't be included)
+
+        // Check that pageNum must never be negative
+        require(pageNum >= 0, "pageNum CANNOT BE NEGATIVE!");
+
+        uint256 startIndex; // Start index for results
+        uint256 endIndex; // Off-by-one (endIndex won't be included)
+        
+        // Check for range and set indices accordingly
+        if(greetings.length < pageNum * pageSize){
+            require(greetings.length  > (pageSize * (pageNum - 1)), "NO MORE GREETINGS TO RETURN!"); // endIndex should not be less than 0, else it is understood that there are no more results for pagination
+            startIndex = 0;
+            endIndex = greetings.length - (pageSize * (pageNum - 1));
+        } else {
+            startIndex = greetings.length - (pageNum * pageSize);
+            endIndex = startIndex + pageSize;
+        }
 
         // If startIndex and endIndex are such that entire array needs to be returned, then return the arrays from storage. Else, create new arrays, fill it up with correct slice (startIndex, endIndex), then return it.
         if(startIndex == 0 && endIndex == greetings.length){
