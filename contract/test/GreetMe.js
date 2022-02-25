@@ -36,7 +36,7 @@ describe("GreetMe should store and return all greetings correctly", () => {
         )));
 
         // Get greetings from contract
-        const [, greetings, ,] = await connectedContract.getGreetings(1, 10);
+        const [ids, greetings, ,] = await connectedContract.getGreetings(1, 10);
 
         //// Assertions
         // Verify that all greetings were stored
@@ -44,7 +44,9 @@ describe("GreetMe should store and return all greetings correctly", () => {
 
         // Verify that pagination works correctly
         const chosenGreeting = greetings[6]; // Choosing an arbitrary greeting
-        const [, greetingsPaginated, ,] = await connectedContract.getGreetings(2, 2);
-        assert.equal(chosenGreeting, greetingsPaginated[0], "Pagination does not work correctly!");
+        const chosenId = ids[6]; // Choosing the above greeting's id
+        const [idsPaginated, greetingsPaginated, ,] = await connectedContract.getGreetings(2, 2);
+        assert.equal(chosenGreeting, greetingsPaginated[0], "Pagination does not work correctly for greetings (str)!");
+        assert.equal(chosenId.toNumber(), idsPaginated[0].toNumber(), "Pagination does not work correctly for ids (uint256s)!");
     });
 })
