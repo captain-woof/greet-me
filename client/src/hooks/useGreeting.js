@@ -3,12 +3,17 @@ import moment from "moment";
 import swal from '@sweetalert/with-react';
 import { useCallback, useEffect, useState } from "react";
 
-export const useGreeting = (maxGreetingsDisplayedLimit = 10) => {
+const DEFAULT_PAGE_SIZE = 10;
+
+export const useGreeting = (pageSize = DEFAULT_PAGE_SIZE) => {
 
     const [greetingsDisplayed, setGreetingsDisplayed] = useState([]); // [{message, timestamp, address}]
     const [initialGreetingsLoaded, setInitialGreetingsLoaded] = useState(false); // State to track if initial message loading is done
     const [sending, setSending] = useState(false);
     const { signer, greetMeContract } = useConnect(true);
+    const [page, setPage] = useState(2); // Page numbers start from 1, but since first page is already loaded at first render time, store 2 as initial paging index
+    const [totalGreetings, setTotalGreetings] = useState(0); // State to store total num of greetings
+    const [noMoreGreetingsToLoad, setNoMoreGreetingsToLoad] = useState(false); // Tracks if there are no more greetings to load
 
     // Function to handle form submission
     const sendGreeting = useCallback(async (greeting) => {
@@ -29,17 +34,53 @@ export const useGreeting = (maxGreetingsDisplayedLimit = 10) => {
         }
     }, [signer, setSending, greetMeContract])
 
-    // Get last 6 messages to display them
+    // Internal function to get paginated greeting
+    const getGreetings = useCallback(async (pageNum, pageSize = pageSize) => {
+        if (!!greetMeContract) {
+            try {
+                const [ids, messages, addresses, timestamps] = await greetMeContract.getGreetings(pageNum, pageSize);
+                const greetingObjs = messages.map((message, i) => ({
+                    id: ids[i].toNumber(),
+                    message: message,
+                    timestamp: moment.unix(timestamps[i].toNumber()).format("Do MMM, YYYY / hh:mm a"),
+                    address: addresses[i]
+                }));
+                return greetingObjs.reverse();
+            } catch (e) {
+                if (import.meta.env.DEV) {
+                    if (e?.data?.message === "Error: VM Exception while processing transaction: reverted with reason string 'NO MORE GREETINGS TO RETURN!'") {
+                        setNoMoreGreetingsToLoad(true);
+                        console.log("No more data to fetch!");
+                    } else {
+                        console.log(e.message);
+                    }
+                }
+                return [];
+            }
+        }
+        return [];
+    }, [greetMeContract])
+
+    // Get and set next page of messages (pagination)
+    const loadMoreGreetings = useCallback(async () => {
+        if (!noMoreGreetingsToLoad) { // Try to load more only if there are more greetings
+            const greetingObjs = await getGreetings(page, pageSize);
+            if (greetingObjs.length !== 0) { // If there are greetings stored
+                setGreetingsDisplayed((prevGreetings) => [...greetingObjs, ...prevGreetings]);
+                setTotalGreetings((prev) => prev + greetingObjs.length);
+                setPage((prev) => prev + 1);
+            }
+        }
+    }, [greetMeContract, setGreetingsDisplayed, noMoreGreetingsToLoad])
+
+    // Get and set latest messages to display them (INITIAL)
     useEffect(async () => {
         if (!!greetMeContract) {
-            const [ids, messages, addresses, timestamps] = await greetMeContract.getGreetings(maxGreetingsDisplayedLimit);
-            const greetingsStored = messages.map((message, i) => ({
-                id: ids[i].toNumber(),
-                message: message,
-                timestamp: moment.unix(timestamps[i].toNumber()).format("Do MMM, YYYY / hh:mm a"),
-                address: addresses[i]
-            }));
-            setGreetingsDisplayed(greetingsStored);
+            const greetingObjs = await getGreetings(1, pageSize);
+            if (greetingObjs.length !== 0) { // If there are greetings stored
+                setGreetingsDisplayed(greetingObjs);
+                setTotalGreetings(greetingObjs.length);
+            }
             setInitialGreetingsLoaded(true);
         }
     }, [greetMeContract])
@@ -50,25 +91,25 @@ export const useGreeting = (maxGreetingsDisplayedLimit = 10) => {
             greetMeContract.on("Greet", (id, greeter, greeting, timestamp) => {
 
                 // Construct new message
-                const convertedTimestamp = moment.unix(timestamp.toNumber()).format("Do MMM, YYYY / hh:mm a");
                 const newGreeting = {
                     id: id.toNumber(),
                     message: greeting,
-                    timestamp: convertedTimestamp,
+                    timestamp: moment.unix(timestamp.toNumber()).format("Do MMM, YYYY / hh:mm a"),
                     address: greeter
                 };
 
                 // Store new greeting to display it
-                const lastMsgStored = greetingsDisplayed[greetingsDisplayed.length - 1];
-                if (greetingsDisplayed.length === 0 || lastMsgStored.id !== newGreeting.id) { // If greeting is indeed new
+                const lastMsgStored = greetingsDisplayed[0];
+                if (greetingsDisplayed.length === 0 || lastMsgStored?.id !== newGreeting?.id) { // If the greeting display array is empty, or if greeting is indeed new
                     if (import.meta.env.DEV) {
                         console.log("NEW GREETING", newGreeting);
                     }
                     // Add new greeting to display arr
                     setGreetingsDisplayed((prevGreetings) => {
-                        let newGreetings = [...prevGreetings.slice(greetingsDisplayed.length === maxGreetingsDisplayedLimit ? 1 : 0), newGreeting]; // If max num of display greetings is shown, add new greeting and remove the oldest one, else just add new one
+                        let newGreetings = [newGreeting, ...prevGreetings]; // Adding the new greeting to the front of the array
                         return newGreetings;
                     });
+                    setTotalGreetings((prev) => prev + 1);
                 }
             });
             return () => greetMeContract.removeAllListeners("Greet");
@@ -85,6 +126,9 @@ export const useGreeting = (maxGreetingsDisplayedLimit = 10) => {
     return {
         sendGreeting,
         sending,
-        greetingsDisplayed
+        greetingsDisplayed,
+        loadMoreGreetings,
+        noMoreGreetingsToLoad,
+        totalGreetings
     }
 }

@@ -4,6 +4,7 @@ import { useGreeting } from "../../../hooks/useGreeting";
 import Button from "../../atoms/Button";
 import "./styles.scss";
 import swal from '@sweetalert/with-react';
+import { motion } from "framer-motion";
 
 export default function GreeterForm() {
     const { signerAddress } = useConnect(true);
@@ -30,7 +31,7 @@ export default function GreeterForm() {
                             </>
                         )
                     });
-                } catch (e) { /* NO HANDLING NEEDED HERE */}
+                } catch (e) { /* NO HANDLING NEEDED HERE */ }
             }}>
                 <h2 id="main-container__greeter-form__title">
                     Hey visitor!
@@ -60,7 +61,47 @@ export default function GreeterForm() {
             }
 
             {/* Messages stored */}
+            {greetingsDisplayed.length !== 0 &&
+                <motion.section id="main-container__greetings" initial="initial" animate="animate" variants={greetingCardContainerVariants}>
+                    {greetingsDisplayed.map(({ id, message, timestamp, address }) => (
+                        <motion.article className="main-container__greetings__greeting-card" key={id} layout layoutId={id} variants={greetingCardVariants}>
+                            <h1 className="main-container__greetings__greeting-card__address">
+                                {`${address.slice(0, 8)}...${address.slice(address.length - 3)}`}
+                            </h1>
+                            <p className="main-container__greetings__greeting-card__message">
+                                {message}
+                            </p>
+                            <p className="main-container__greetings__greeting-card__timestamp">
+                                {timestamp}
+                            </p>
+                        </motion.article>
+                    ))}
+                </motion.section>
+            }
 
         </main>
     )
+}
+
+// Animation variants
+const greetingCardContainerVariants = {
+    animate: {
+        transition: {
+            staggerChildren: 0.2
+        }
+    }
+}
+
+const greetingCardVariants = {
+    initial: {
+        x: "-60%",
+        opacity: 0
+    },
+    animate: {
+        x: "0%",
+        opacity: 1,
+        transition: {
+            duration: 0.8
+        }
+    }
 }

@@ -6,8 +6,8 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     align-items: center;
+    margin-top: 5rem;
 
     @media (min-width: 768px) {
         padding: 2rem;
@@ -64,5 +64,39 @@
         text-align: center;
         margin-top: 0.5rem;
         color: var(--color-white);
+    }
+
+    #main-container__greetings {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-top: 2rem;
+        position: relative;
+        max-width: 520px;
+        width: 100%;
+        margin-bottom: 2rem;
+
+        .main-container__greetings__greeting-card {
+            background-color: var(--color-white);
+            border-radius: 6px;
+            padding: 1rem;
+
+            .main-container__greetings__greeting-card__address {
+                color: var(--color-black);
+                font-size: 0.7rem;
+                font-weight: 400;
+                word-break: break-all;
+            }
+
+            .main-container__greetings__greeting-card__message {
+                color: var(--color-black-dark);
+                margin-top: 0.5rem;
+            }
+
+            .main-container__greetings__greeting-card__timestamp {
+                color: var(--color-black);
+                font-size: 0.85rem;
+            }
+        }
     }
 }
