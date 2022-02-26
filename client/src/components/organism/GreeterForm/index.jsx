@@ -1,15 +1,24 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useConnect } from "../../../hooks/useConnect";
 import { useGreeting } from "../../../hooks/useGreeting";
 import Button from "../../atoms/Button";
 import "./styles.scss";
 import swal from '@sweetalert/with-react';
 import { motion } from "framer-motion";
+import { useInView } from 'react-intersection-observer';
 
 export default function GreeterForm() {
     const { signerAddress } = useConnect(true);
     const [greeting, setGreeting] = useState("");
-    const { greetingsDisplayed, sendGreeting, sending } = useGreeting();
+    const { greetingsDisplayed, sendGreeting, sending, loadMoreGreetings, noMoreGreetingsToLoad } = useGreeting(3);
+    const { ref: sentinelRef, inView: sentinelInView } = useInView();
+
+    // Trigger fetching next page of messages when sentinel is in view
+    useEffect(() => {
+        if (sentinelInView && !noMoreGreetingsToLoad) {
+            loadMoreGreetings();
+        }
+    }, [sentinelInView])
 
     return (
         <main id="main-container">
@@ -76,6 +85,12 @@ export default function GreeterForm() {
                             </p>
                         </motion.article>
                     ))}
+                    <div id="main-container__greetings__sentinel" ref={sentinelRef}>
+                        {noMoreGreetingsToLoad ?
+                            "No more greetings 🥺" :
+                            "Loading more 💬"
+                        }
+                    </div>
                 </motion.section>
             }
 

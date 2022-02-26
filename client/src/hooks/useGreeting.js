@@ -66,12 +66,12 @@ export const useGreeting = (pageSize = DEFAULT_PAGE_SIZE) => {
         if (!noMoreGreetingsToLoad) { // Try to load more only if there are more greetings
             const greetingObjs = await getGreetings(page, pageSize);
             if (greetingObjs.length !== 0) { // If there are greetings stored
-                setGreetingsDisplayed((prevGreetings) => [...greetingObjs, ...prevGreetings]);
+                setGreetingsDisplayed((prevGreetings) => [...prevGreetings, ...greetingObjs]);
                 setTotalGreetings((prev) => prev + greetingObjs.length);
                 setPage((prev) => prev + 1);
             }
         }
-    }, [greetMeContract, setGreetingsDisplayed, noMoreGreetingsToLoad])
+    }, [greetMeContract, setGreetingsDisplayed, noMoreGreetingsToLoad, page, pageSize, setPage])
 
     // Get and set latest messages to display them (INITIAL)
     useEffect(async () => {

@@ -98,5 +98,12 @@
                 font-size: 0.85rem;
             }
         }
+
+        #main-container__greetings__sentinel {
+            width: 100%;
+            max-width: 520px;
+            text-align: center;
+            color: var(--color-white);
+        }
     }
 }
