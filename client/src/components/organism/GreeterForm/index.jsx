@@ -47,7 +47,7 @@ export default function GreeterForm() {
                 </h2>
 
                 <p id="main-container__greeter-form__description">
-                    I'm Sohail. This is my first Web3 project!<br />
+                    I'm <a href="https://twitter.com/realCaptainWoof" target="_blank">Sohail</a>. This is my first Web3 project!<br />
                     Send me a hello, and I will store it on the blockchain forever!
                 </p>
 

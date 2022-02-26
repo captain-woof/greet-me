@@ -68,3 +68,9 @@ textarea {
 textarea:disabled {
   cursor: not-allowed;
 }
+
+a {
+  color: #c36199;
+  text-decoration: none;
+  font-weight: 500;
+}
