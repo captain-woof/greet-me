@@ -7,20 +7,24 @@ const DEFAULT_PAGE_SIZE = 10;
 
 export const useGreeting = (pageSize = DEFAULT_PAGE_SIZE) => {
 
-    const [greetingsDisplayed, setGreetingsDisplayed] = useState([]); // [{message, timestamp, address}]
+    const [greetingsDisplayed, setGreetingsDisplayed] = useState([]); // [{id, greeting, greeter, timestamp}]
     const [initialGreetingsLoaded, setInitialGreetingsLoaded] = useState(false); // State to track if initial message loading is done
     const [sending, setSending] = useState(false);
-    const { signer, greetMeContract } = useConnect(true);
+    const { signer, greetMeContract, greetMeContractReadOnly } = useConnect(true);
     const [page, setPage] = useState(2); // Page numbers start from 1, but since first page is already loaded at first render time, store 2 as initial paging index
     const [totalGreetings, setTotalGreetings] = useState(0); // State to store total num of greetings
     const [noMoreGreetingsToLoad, setNoMoreGreetingsToLoad] = useState(false); // Tracks if there are no more greetings to load
 
+    ///////////////
+    // FUNCTIONS //
+    ///////////////
+
     // Function to handle form submission
-    const sendGreeting = useCallback(async (greeting) => {
+    const sendGreeting = useCallback(async (greetingMsg) => {
         if (!!signer) {
             try {
                 setSending(true);
-                const txResp = await greetMeContract.greet(greeting);
+                const txResp = await greetMeContract.greet(greetingMsg);
                 const txReceipt = await txResp.wait();
                 if (txReceipt.confirmations === 0) { // Transaction was not included on Block
                     throw Error("Transaction was not included on Block");
@@ -36,54 +40,58 @@ export const useGreeting = (pageSize = DEFAULT_PAGE_SIZE) => {
 
     // Internal function to get paginated greeting
     const getGreetings = useCallback(async (pageNum, pageSize = pageSize) => {
-        if (!!greetMeContract) {
+        if (!!greetMeContractReadOnly) {
             try {
-                const [ids, messages, addresses, timestamps] = await greetMeContract.getGreetings(pageNum, pageSize);
-                const greetingObjs = messages.map((message, i) => ({
+                const [ids, greetings] = await greetMeContractReadOnly.getGreetings(pageNum, pageSize);
+                const greetingObjs = greetings.map(({ greeting, greeter, timestamp }, i) => ({
                     id: ids[i].toNumber(),
-                    message: message,
-                    timestamp: moment.unix(timestamps[i].toNumber()).format("Do MMM, YYYY / hh:mm a"),
-                    address: addresses[i]
+                    greeting,
+                    timestamp: moment.unix(timestamp.toNumber()).format("Do MMM, YYYY / hh:mm a"),
+                    greeter
                 }));
                 return greetingObjs.reverse();
             } catch (e) {
-                if (import.meta.env.DEV) {
-                    if (e?.data?.message === "Error: VM Exception while processing transaction: reverted with reason string 'NO MORE GREETINGS TO RETURN!'") {
-                        setNoMoreGreetingsToLoad(true);
-                        console.log("No more data to fetch!");
-                    } else {
-                        console.log(e.message);
-                    }
+                if (e?.data?.message !== "Error: VM Exception while processing transaction: reverted with reason string 'NO MORE GREETINGS TO RETURN!'" && import.meta.env.DEV) {
+                    console.log(e.message);
                 }
                 return [];
             }
         }
         return [];
-    }, [greetMeContract])
+    }, [greetMeContractReadOnly, totalGreetings])
 
     // Get and set next page of messages (pagination)
     const loadMoreGreetings = useCallback(async () => {
-        if (!noMoreGreetingsToLoad) { // Try to load more only if there are more greetings
+        if (!noMoreGreetingsToLoad && initialGreetingsLoaded) { // Try to load more only if there are more greetings and initial greetings have been loaded
             const greetingObjs = await getGreetings(page, pageSize);
             if (greetingObjs.length !== 0) { // If there are greetings stored
+                setNoMoreGreetingsToLoad(greetingsDisplayed.length + greetingObjs.length === totalGreetings);
                 setGreetingsDisplayed((prevGreetings) => [...prevGreetings, ...greetingObjs]);
-                setTotalGreetings((prev) => prev + greetingObjs.length);
                 setPage((prev) => prev + 1);
             }
         }
-    }, [greetMeContract, setGreetingsDisplayed, noMoreGreetingsToLoad, page, pageSize, setPage])
+    }, [setGreetingsDisplayed, noMoreGreetingsToLoad, page, setPage, initialGreetingsLoaded, greetingsDisplayed, totalGreetings])
 
-    // Get and set latest messages to display them (INITIAL)
+    /////////////
+    // EFFECTS //
+    /////////////
+
+    // Get and set latest messages to display them (INITIAL), and also set total number of messages
     useEffect(async () => {
-        if (!!greetMeContract) {
+        if (!!greetMeContractReadOnly) {
             const greetingObjs = await getGreetings(1, pageSize);
+            let totalGreetingsStored = await greetMeContractReadOnly.getNumOfGreetings();
+            totalGreetingsStored = totalGreetingsStored.toNumber();
             if (greetingObjs.length !== 0) { // If there are greetings stored
                 setGreetingsDisplayed(greetingObjs);
-                setTotalGreetings(greetingObjs.length);
+                setTotalGreetings(totalGreetingsStored);
+            }
+            if (greetingObjs.length === totalGreetingsStored) {
+                setNoMoreGreetingsToLoad(true);
             }
             setInitialGreetingsLoaded(true);
         }
-    }, [greetMeContract])
+    }, [greetMeContractReadOnly])
 
     // Add new messages when the Greeting event is fired by contract
     useEffect(() => {
@@ -93,16 +101,16 @@ export const useGreeting = (pageSize = DEFAULT_PAGE_SIZE) => {
                 // Construct new message
                 const newGreeting = {
                     id: id.toNumber(),
-                    message: greeting,
+                    greeting,
                     timestamp: moment.unix(timestamp.toNumber()).format("Do MMM, YYYY / hh:mm a"),
-                    address: greeter
+                    greeter
                 };
 
                 // Store new greeting to display it
                 const lastMsgStored = greetingsDisplayed[0];
                 if (greetingsDisplayed.length === 0 || lastMsgStored?.id !== newGreeting?.id) { // If the greeting display array is empty, or if greeting is indeed new
                     if (import.meta.env.DEV) {
-                        console.log("NEW GREETING", newGreeting);
+                        console.log("[+] NEW GREETING EVENT:", newGreeting);
                     }
                     // Add new greeting to display arr
                     setGreetingsDisplayed((prevGreetings) => {
@@ -119,7 +127,7 @@ export const useGreeting = (pageSize = DEFAULT_PAGE_SIZE) => {
     // LOG WHENEVER GREETINGS CHANGE
     useEffect(() => {
         if (import.meta.env.DEV) {
-            console.log("Greetings changed", greetingsDisplayed);
+            console.log("[+] GREETINGS CHANGED:", greetingsDisplayed);
         }
     }, [greetingsDisplayed])
 

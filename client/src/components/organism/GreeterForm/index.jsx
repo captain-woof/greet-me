@@ -15,7 +15,7 @@ export default function GreeterForm() {
 
     // Trigger fetching next page of messages when sentinel is in view
     useEffect(() => {
-        if (sentinelInView && !noMoreGreetingsToLoad) {
+        if (sentinelInView) {
             loadMoreGreetings();
         }
     }, [sentinelInView])
@@ -48,7 +48,8 @@ export default function GreeterForm() {
 
                 <p id="main-container__greeter-form__description">
                     I'm <a href="https://twitter.com/realCaptainWoof" target="_blank">Sohail</a>. This is my first Web3 project!<br />
-                    Send me a hello, and I will store it on the blockchain forever!
+                    Send me a hello, and I will store it on the blockchain forever!<br/>
+                    Also, <b>stand a chance to win some ether</b> if you send me a greeting! 😏
                 </p>
 
                 <label htmlFor="main-container__greeter-form__greeting" id="main-container__greeter-form__greeting-label">
@@ -72,13 +73,13 @@ export default function GreeterForm() {
             {/* Messages stored */}
             {greetingsDisplayed.length !== 0 &&
                 <motion.section id="main-container__greetings" initial="initial" animate="animate" variants={greetingCardContainerVariants}>
-                    {greetingsDisplayed.map(({ id, message, timestamp, address }) => (
+                    {greetingsDisplayed.map(({ id, greeting, timestamp, greeter }) => (
                         <motion.article className="main-container__greetings__greeting-card" key={id} layout layoutId={id} variants={greetingCardVariants}>
                             <h1 className="main-container__greetings__greeting-card__address">
-                                {`${address.slice(0, 8)}...${address.slice(address.length - 3)}`}
+                                {`${greeter.slice(0, 8)}...${greeter.slice(greeter.length - 3)}`}
                             </h1>
                             <p className="main-container__greetings__greeting-card__message">
-                                {message}
+                                {greeting}
                             </p>
                             <p className="main-container__greetings__greeting-card__timestamp">
                                 {timestamp}

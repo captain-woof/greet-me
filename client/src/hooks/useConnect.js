@@ -10,6 +10,7 @@ export const useConnect = (connectOnLoad = false) => {
     const [provider, setProvider] = useState(null); // Provider
     const [loading, setLoading] = useState(false);
     const [greetMeContract, setGreetMeContract] = useState(null); // State to store Smart Contract
+    const [greetMeContractReadOnly, setGreetMeContractReadOnly] = useState(null); // State to store Smart Contract
 
     // Function to connect wallet
     const handleConnect = useCallback(async (askPermission = true) => {
@@ -35,6 +36,10 @@ export const useConnect = (connectOnLoad = false) => {
                 const currentSignerAddress = await currentSigner.getAddress();
                 setSigner(currentSigner);
                 setSignerAddress(currentSignerAddress);
+
+                // Save Read-only instance of contract connection in state
+                const contractReadOnly = new ethers.Contract(import.meta.env.VITE_GREET_ME_CONTRACT_ADDRESS, CONTRACT.abi, currentProvider);
+                setGreetMeContractReadOnly(contractReadOnly);
 
                 // Set connection to contract
                 const contract = new ethers.Contract(import.meta.env.VITE_GREET_ME_CONTRACT_ADDRESS, CONTRACT.abi, currentSigner);
@@ -91,6 +96,7 @@ export const useConnect = (connectOnLoad = false) => {
         setSigner,
         handleConnect,
         signerAddress,
-        greetMeContract
+        greetMeContract,
+        greetMeContractReadOnly
     }
 }
