@@ -93,14 +93,16 @@ export const useGreeting = (pageSize = DEFAULT_PAGE_SIZE) => {
     // Get and set latest messages to display them (INITIAL), and also set total number of messages
     useEffect(async () => {
         if (!!greetMeContractReadOnly) {
-            const greetingObjs = await getGreetings(1, pageSize);
             let totalGreetingsStored = await greetMeContractReadOnly.getNumOfGreetings();
             totalGreetingsStored = totalGreetingsStored.toNumber();
-            if (greetingObjs.length !== 0) { // If there are greetings stored
+
+            // If there are greetings stored
+            if (totalGreetingsStored !== 0) {
+                const greetingObjs = await getGreetings(1, pageSize); // Fetch first page of greetings
                 setGreetingsDisplayed(greetingObjs);
                 setTotalGreetings(totalGreetingsStored);
-            }
-            if (greetingObjs.length === totalGreetingsStored) {
+                setNoMoreGreetingsToLoad(greetingObjs.length === totalGreetingsStored);
+            } else { // If there are no greetings stored
                 setNoMoreGreetingsToLoad(true);
             }
             setInitialGreetingsLoaded(true);
