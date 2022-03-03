@@ -2,6 +2,7 @@ import { useConnect } from "./useConnect";
 import moment from "moment";
 import swal from '@sweetalert/with-react';
 import { useCallback, useEffect, useState } from "react";
+import { ethers } from "ethers";
 
 const DEFAULT_PAGE_SIZE = 10;
 
@@ -10,7 +11,7 @@ export const useGreeting = (pageSize = DEFAULT_PAGE_SIZE) => {
     const [greetingsDisplayed, setGreetingsDisplayed] = useState([]); // [{id, greeting, greeter, timestamp}]
     const [initialGreetingsLoaded, setInitialGreetingsLoaded] = useState(false); // State to track if initial message loading is done
     const [sending, setSending] = useState(false);
-    const { signer, greetMeContract, greetMeContractReadOnly } = useConnect(true);
+    const { signer, greetMeContract, greetMeContractReadOnly, signerAddress } = useConnect(true);
     const [page, setPage] = useState(2); // Page numbers start from 1, but since first page is already loaded at first render time, store 2 as initial paging index
     const [totalGreetings, setTotalGreetings] = useState(0); // State to store total num of greetings
     const [noMoreGreetingsToLoad, setNoMoreGreetingsToLoad] = useState(false); // Tracks if there are no more greetings to load
@@ -75,6 +76,19 @@ export const useGreeting = (pageSize = DEFAULT_PAGE_SIZE) => {
     /////////////
     // EFFECTS //
     /////////////
+
+    // Set listener to show if user won
+    useEffect(() => {
+        if (!!greetMeContract) {
+            greetMeContract.on("Winner", (winnerAddress, amountWon) => {
+                if (signerAddress === winnerAddress) {
+                    const amountWonFormatted = ethers.utils.formatEther(amountWon);
+                    swal({ title: "Congratulations", text: `You just won ${amountWonFormatted} ETH!!` });
+                }
+            })
+            return () => greetMeContract.removeAllListeners("Winner");
+        }
+    }, [greetMeContract, signerAddress])
 
     // Get and set latest messages to display them (INITIAL), and also set total number of messages
     useEffect(async () => {

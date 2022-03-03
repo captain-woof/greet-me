@@ -10,7 +10,7 @@ import { useInView } from 'react-intersection-observer';
 export default function GreeterForm() {
     const { signerAddress } = useConnect(true);
     const [greeting, setGreeting] = useState("");
-    const { greetingsDisplayed, sendGreeting, sending, loadMoreGreetings, noMoreGreetingsToLoad } = useGreeting(3);
+    const { greetingsDisplayed, sendGreeting, sending, loadMoreGreetings, noMoreGreetingsToLoad, totalGreetings } = useGreeting(3);
     const { ref: sentinelRef, inView: sentinelInView } = useInView();
 
     // Trigger fetching next page of messages when sentinel is in view
@@ -48,7 +48,7 @@ export default function GreeterForm() {
 
                 <p id="main-container__greeter-form__description">
                     I'm <a href="https://twitter.com/realCaptainWoof" target="_blank">Sohail</a>. This is my first Web3 project!<br />
-                    Send me a hello, and I will store it on the blockchain forever!<br/>
+                    Send me a hello, and I will store it on the blockchain forever!<br /><br />
                     Also, <b>stand a chance to win some ether</b> if you send me a greeting! 😏
                 </p>
 
@@ -72,27 +72,38 @@ export default function GreeterForm() {
 
             {/* Messages stored */}
             {greetingsDisplayed.length !== 0 &&
-                <motion.section id="main-container__greetings" initial="initial" animate="animate" variants={greetingCardContainerVariants}>
-                    {greetingsDisplayed.map(({ id, greeting, timestamp, greeter }) => (
-                        <motion.article className="main-container__greetings__greeting-card" key={id} layout layoutId={id} variants={greetingCardVariants}>
-                            <h1 className="main-container__greetings__greeting-card__address">
-                                {`${greeter.slice(0, 8)}...${greeter.slice(greeter.length - 3)}`}
-                            </h1>
-                            <p className="main-container__greetings__greeting-card__message">
-                                {greeting}
-                            </p>
-                            <p className="main-container__greetings__greeting-card__timestamp">
-                                {timestamp}
-                            </p>
-                        </motion.article>
-                    ))}
-                    <div id="main-container__greetings__sentinel" ref={sentinelRef}>
-                        {noMoreGreetingsToLoad ?
-                            "No more greetings 🥺" :
-                            "Loading more 💬"
+                <>
+                    {/* Message num stats */}
+                    <h2 id="main-container__greetings-stat">
+                        {totalGreetings === 0 ?
+                            "No greetings yet! Be the first to greet me!" :
+                            `Received ${totalGreetings} messages so far!`
                         }
-                    </div>
-                </motion.section>
+                    </h2>
+
+                    {/* Message cards */}
+                    <motion.section id="main-container__greetings" initial="initial" animate="animate" variants={greetingCardContainerVariants}>
+                        {greetingsDisplayed.map(({ id, greeting, timestamp, greeter }) => (
+                            <motion.article className="main-container__greetings__greeting-card" key={id} layout layoutId={id} variants={greetingCardVariants}>
+                                <h1 className="main-container__greetings__greeting-card__address">
+                                    {`${greeter.slice(0, 8)}...${greeter.slice(greeter.length - 3)}`}
+                                </h1>
+                                <p className="main-container__greetings__greeting-card__message">
+                                    {greeting}
+                                </p>
+                                <p className="main-container__greetings__greeting-card__timestamp">
+                                    {timestamp}
+                                </p>
+                            </motion.article>
+                        ))}
+                        <div id="main-container__greetings__sentinel" ref={sentinelRef}>
+                            {noMoreGreetingsToLoad ?
+                                "No more greetings 🥺" :
+                                "Loading more 💬"
+                            }
+                        </div>
+                    </motion.section>
+                </>
             }
 
         </main>
